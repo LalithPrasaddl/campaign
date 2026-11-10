@@ -6,7 +6,7 @@ This web version exists to **validate the idea with outside reviewers** before a
 
 ## Running it
 
-Open `index.html` in a browser. All scripts are plain classic scripts, so it also works from `file://`. Alternatively:
+Open `index.html` in a browser. All scripts are plain classic scripts, so it also works from `file://`. Add `?s=rajnagar` or `?s=harlan` to jump to a setting. Alternatively:
 
 ```bash
 python3 -m http.server 8000   # then open http://localhost:8000
@@ -17,16 +17,30 @@ python3 -m http.server 8000   # then open http://localhost:8000
 ```
 campaign/
 ├── .nojekyll              ← GitHub Pages: serve files as they are
-├── index.html             ← Loads fonts, CSS and the three scripts in order
+├── index.html             ← Loads fonts, CSS and settings.js
 ├── assets/css/main.css    ← All styling; colour tokens at the top
-├── assets/js/content.js   ← Data and text only: groups, towns, roads, principles, secrets, staff, scenes, staff lines
-├── assets/js/engine.js    ← Game rules. No DOM access. Depends on content.js globals
+├── assets/js/settings.js  ← The list of settings; loads the chosen setting file, then engine.js, then ui.js
+├── assets/js/content/     ← One file per setting: data and text only (groups, towns, roads, principles, secrets, staff, scenes, staff lines, SET)
+│   ├── harlan.js          ← Harlan Valley: small-town, dollars (the original)
+│   └── rajnagar.js        ← Rajnagar: Indian-flavoured, lakhs and crores
+├── assets/js/engine.js    ← Game rules. No DOM access, no player-facing text. Depends on the setting file's globals
 ├── assets/js/ui.js        ← Screens. Renders state and calls engine functions; no game rules
 ├── tools/sim.js           ← Balance tool: plays thousands of scripted games in Node
+├── tools/parity.js        ← Checks a setting matches harlan.js scene for scene (numbers, lines, flags)
 └── docs/design-notes.md   ← Concept, decisions, playtest history, balance targets, open questions
 ```
 
-The three scripts share globals (top-level `const` and `function`). `content.js` must load before `engine.js`, and `engine.js` before `ui.js`.
+The scripts share globals (top-level `const` and `function`). The setting file must load before `engine.js`, and `engine.js` before `ui.js`; `settings.js` handles that.
+
+## Settings
+
+The same game comes in more than one setting so reviewers outside the US can relate to it. The player picks one at the top of the landing page (stored in `localStorage` and `?s=`). The picker never names a real country.
+
+- Every setting file defines the same globals with the **same ids and the same numbers** (groups, roads, `fx`, `breaks`, `says`, `flag`). Only names and text differ, so the engine and balance don't change. Town ids can differ; `SET.start` and `SET.rivalStart` say where play begins.
+- Each scene has a counterpart in every setting, retold for that place, in the same position in its array.
+- `SET` holds everything else the player reads: the sign, the landing briefing, money format (`SET.money`), everyday words the screens use (`SET.words`: district/constituency, poll/survey, travel time, the quiet-morning line), rival and party lines, counting-night labels, endings and epilogue.
+- The engine and UI hold no names, places or currency. If you add player-facing text there, put it in `SET` in every setting file instead.
+- Rajnagar: keep caste and religion out entirely, and keep parties unnamed. Indian English spelling (favour, apologise).
 
 ## How the game works
 
@@ -40,7 +54,7 @@ The three scripts share globals (top-level `const` and `function`). `content.js`
 
 ## Adding content
 
-Most growth will be new scenes. Add them to `content.js`:
+Most growth will be new scenes. Add them to **every** setting file under `assets/js/content/`, with matching numbers:
 
 - **A town stop:** add to `STOPS` with `town`, `title`, `tease` (one line shown on the map list), `text`, and 2–3 `choices`. Optional `until` (hour) makes it time-limited. Use `press: true` instead of `town` for a press scene that can appear anywhere.
 - **A morning call:** add to `MORNING`. Use `needs: '<staffId>'` if it only makes sense when that person is hired.
@@ -53,23 +67,24 @@ Writing rules for scenes:
 - Fictional people and places only. Keep the parties unnamed, and judge consistency, never ideology.
 - Plain, specific language: a person, a place, a number.
 
-After adding content or changing numbers, run the balance tool.
+After adding content or changing numbers, run `node tools/parity.js` (settings still match) and the balance tool.
 
 ## Balance
 
 ```bash
-node tools/sim.js 2000
+node tools/sim.js 2000            # Harlan Valley
+node tools/sim.js 2000 rajnagar   # any other setting
 ```
 
 Current targets for the scripted styles (2000 games each):
 
 | Style | Target win rate | Last measured |
 |---|---|---|
-| Never crosses any line (`saint`) | under 15% | 10% |
-| Keeps own 3 principles (`principled`) | 30–45% | 36% |
-| Breaks own principles about twice (`calculating`) | a little above principled | 43% |
-| Cheats constantly (`greedy`) | below principled | 29% |
-| Stays near home (`homebody`) | well below principled | 11% |
+| Never crosses any line (`saint`) | under 15% | 9% |
+| Keeps own 3 principles (`principled`) | 30–45% | 42% |
+| Breaks own principles about twice (`calculating`) | a little above principled | 46% |
+| Cheats constantly (`greedy`) | below principled | 34% |
+| Stays near home (`homebody`) | well below principled | 12% |
 
 The shape matters more than exact numbers: pure honesty rarely wins, selective compromise pays a little, recklessness backfires, and touring the map matters. The scripted players ignore staff advice, polls and tips, so they undersell staff such as Priya and Nina.
 
@@ -83,4 +98,4 @@ There is no in-game feedback form (removed at the user's request), no server and
 
 ## Towards React Native
 
-The goal is an Expo / React Native app, structured like the sibling `donkey` project (pure TypeScript engine in `src/game/`, seeded random, UI separate). Keep `engine.js` free of DOM access and keep text in `content.js`, so the port is mostly typing the engine and moving content into data files. `newGame` already takes an `rng` argument for seeding.
+The goal is an Expo / React Native app, structured like the sibling `donkey` project (pure TypeScript engine in `src/game/`, seeded random, UI separate). Keep `engine.js` free of DOM access and keep text in the setting files, so the port is mostly typing the engine and moving each setting into its own data file. `newGame` already takes an `rng` argument for seeding.

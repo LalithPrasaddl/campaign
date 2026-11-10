@@ -1,7 +1,9 @@
-/* The Race: screens. Reads and calls engine.js; holds no game rules of its own. */
+/* The Race: screens. Reads and calls engine.js; holds no game rules of its own.
+   Names, places and money come from the setting file (SET, STAFF), never written here. */
 const $ = id => document.getElementById(id);
 let setup = { principles: [], secret: null, staff: [] }, G = null, screen = 'landing';
 const START_MONEY = 60;
+const cash = n => SET.money(n);
 
 function fmtHour(h) { const x = h > 12 ? h - 12 : h; return x + (h < 12 ? 'am' : 'pm'); }
 function esc(s) { return String(s); }
@@ -17,22 +19,25 @@ function render() {
 
 /* ---------- Landing ---------- */
 function renderLanding(el) {
+  const places = SETTINGS.map(x => `<button class="place-pick" aria-pressed="${x.id === SET.id}" onclick="pickSetting('${x.id}')"><b>${x.name}</b><span>${x.blurb}</span></button>`).join('');
   el.innerHTML = `<section class="landing">
-    <div class="sign" role="img" aria-label="Campaign yard sign: Rivera for Congress">
-      <div class="who">RIVERA</div><div class="for">for Congress</div><div class="stripe"></div>
-      <div class="line">Harlan Valley's 9th District</div>
+    <div class="places" role="group" aria-label="Where you're running"><p class="small">Where are you running?</p>${places}</div>
+    <div class="sign" role="img" aria-label="Campaign sign: ${SET.sign.name} ${SET.sign.for}">
+      <div class="who">${SET.sign.name}</div><div class="for">${SET.sign.for}</div><div class="stripe"></div>
+      <div class="line">${SET.sign.line}</div>
     </div>
     <h1>The Race</h1>
-    <p class="lede">Five days until the vote. Dale Whitmore has held this seat for eighteen years, and you're behind. Every town wants to hear something different, and some of it isn't true.</p>
+    <div class="brief">${SET.brief.map(p => `<p>${p}</p>`).join('')}</div>
     <ol class="steps">
       <li>Swear to three principles, pick your secret and hire a team.</li>
-      <li>Each day, answer a morning call, then choose where to drive. Every town has its own moment.</li>
+      <li>Each day, answer a morning call, then choose where to go. Every town has its own moment.</li>
       <li>Each evening, hear from your team, give them tomorrow's jobs and buy an ad.</li>
       <li>Watch the results come in, then see what winning cost you.</li>
     </ol>
     <button class="btn" onclick="screen='setup';go()">Start a campaign</button>
     <p class="small" style="margin-top:12px">About 10 minutes. Text only, no sign-up.</p>
-    <div class="note small"><p>This is an early build for feedback. The district, people and events are fictional.</p></div>
+    ${SET.draft ? `<div class="note small"><p><b>Preview:</b> ${SET.place} only has a sample of its scenes so far, so some days will feel thin.</p></div>` : ''}
+    <div class="note small"><p>This is an early build for feedback. The ${SET.words.area}, people and events are fictional.</p></div>
   </section>`;
 }
 
@@ -40,11 +45,11 @@ function renderLanding(el) {
 function renderSetup(el) {
   const pr = Object.entries(PRINCIPLES).map(([id, p]) => `<button class="choice" aria-pressed="${setup.principles.includes(id)}" onclick="togglePrinciple('${id}')">${p.text}</button>`).join('');
   const se = Object.entries(SECRETS).map(([id, p]) => `<button class="choice" aria-pressed="${setup.secret === id}" onclick="setup.secret='${id}';go(false)">${p.text}</button>`).join('');
-  const st = Object.entries(STAFF).map(([id, p]) => `<button class="choice" aria-pressed="${setup.staff.includes(id)}" onclick="toggleStaff('${id}')"><span class="who-line">${face(id)}${p.name}</span><span class="meta">${p.role}, $${p.pay}k a day. ${p.text}</span></button>`).join('');
+  const st = Object.entries(STAFF).map(([id, p]) => `<button class="choice" aria-pressed="${setup.staff.includes(id)}" onclick="toggleStaff('${id}')"><span class="who-line">${face(id)}${p.name}</span><span class="meta">${p.role}, ${cash(p.pay)} a day. ${p.text}</span></button>`).join('');
   const pay = setup.staff.reduce((a, x) => a + STAFF[x].pay, 0);
   const ready = setup.principles.length === 3 && setup.secret;
   el.innerHTML = `<section style="padding-top:24px">
-    <p class="small">You are Sam Rivera, a former county commissioner.</p>
+    <p class="small">You are ${SET.you}, ${SET.youWas}.</p>
     <h1>Before you announce</h1>
     <h2>Swear to three principles <span class="count">${setup.principles.length} of 3</span></h2>
     <p class="small">Nothing stops you breaking them. The game remembers.</p>
@@ -52,8 +57,8 @@ function renderSetup(el) {
     <h2>Choose your secret</h2>
     <p class="small">It's true, and it may come out.</p>
     <div class="pick">${se}</div>
-    <h2>Hire your team <span class="count">$${pay}k a day</span></h2>
-    <p class="small">You start with $${START_MONEY}k and raise about $6k a day. One person per role. They'll give advice, stand in for you and remember how you treat them.</p>
+    <h2>Hire your team <span class="count">${cash(pay)} a day</span></h2>
+    <p class="small">You start with ${cash(START_MONEY)} and raise about ${cash(6)} a day. One person per role. They'll give advice, stand in for you and remember how you treat them.</p>
     <div class="pick">${st}</div>
     <div class="cta"><button class="btn" ${ready ? '' : 'disabled'} onclick="startGame()">${ready ? 'Announce your campaign' : 'Pick 3 principles and a secret'}</button></div>
   </section>`;
@@ -66,18 +71,18 @@ function startGame() { G = newGame(Math.random, { principles: setup.principles.s
 function bar() {
   const days = Array.from({ length: DAY_COUNT }, (_, i) => `<i class="${i + 1 < G.day ? 'done' : i + 1 === G.day ? 'now' : ''}"></i>`).join('');
   const word = v => v >= 70 ? 'warm' : v >= 45 ? 'neutral' : v >= 25 ? 'cool' : 'hostile';
-  return `<div class="bar"><span class="days" aria-label="Day ${G.day} of ${DAY_COUNT}">${days}</span><span>Day <b>${G.day}</b> of ${DAY_COUNT}</span><span><b>${fmtHour(Math.min(G.hour, 23))}</b></span><span><b>$${G.money}k</b></span><span>Press <b>${word(G.press)}</b></span><span>Party <b>${word(G.party)}</b></span></div>`;
+  return `<div class="bar"><span class="days" aria-label="Day ${G.day} of ${DAY_COUNT}">${days}</span><span>Day <b>${G.day}</b> of ${DAY_COUNT}</span><span><b>${fmtHour(Math.min(G.hour, 23))}</b></span><span><b>${cash(G.money)}</b></span><span>Press <b>${word(G.press)}</b></span><span>Party <b>${word(G.party)}</b></span></div>`;
 }
 function files() {
   const lines = G.principles.map(p => { const b = G.broken.some(x => x.principle === p); return `<li class="${b ? 'broken' : ''}">${b ? 'Broken: ' : ''}${PRINCIPLES[p].text}</li>`; }).join('');
   const said = Object.entries(G.stances).map(([i, x]) => `<li>Day ${x.day}, ${x.town}: "${ISSUES[i][x.side]}"</li>`).join('') || '<li>Nothing on the record yet.</li>';
-  const team = G.staff.map(x => `<li>${STAFF[x].name}, ${STAFF[x].role}: ${loyalWord(G.loyal[x])}</li>`).join('') || '<li>Just you and Dana, a volunteer.</li>';
-  const polls = G.polls.map(p => `<li>Day ${p.day}, ${p.cheap ? 'cheap' : 'good'} poll: you ${p.total}%. ${Object.keys(p.rows).map(id => GROUPS[id].name + ' ' + p.rows[id] + '%').join(', ')}</li>`).join('') || '<li>No polls yet.</li>';
+  const team = G.staff.map(x => `<li>${STAFF[x].name}, ${STAFF[x].role}: ${loyalWord(G.loyal[x])}</li>`).join('') || `<li>Just you and ${SET.volunteer}, a volunteer.</li>`;
+  const polls = G.polls.map(p => `<li>Day ${p.day}, ${p.cheap ? 'cheap' : 'good'} ${SET.words.poll}: you ${p.total}%. ${Object.keys(p.rows).map(id => GROUPS[id].name + ' ' + p.rows[id] + '%').join(', ')}</li>`).join('') || `<li>No ${SET.words.poll}s yet.</li>`;
   return `<div class="files">
     <details><summary>Your principles</summary><ul>${lines}</ul></details>
     <details><summary>What you've said on the record (${Object.keys(G.stances).length})</summary><ul>${said}</ul></details>
     <details><summary>Your team (${G.staff.length})</summary><ul>${team}</ul></details>
-    <details><summary>Polls (${G.polls.length})</summary><ul>${polls}</ul></details></div>`;
+    <details><summary>${SET.words.Poll}s (${G.polls.length})</summary><ul>${polls}</ul></details></div>`;
 }
 function choiceBtn(x, i, fn) {
   const crosses = x.breaks && G.principles.includes(x.breaks), clash = contradiction(G, x), clashLine = clash && G.principles.includes('oneMessage');
@@ -125,16 +130,16 @@ function mapSvg() {
     return (here ? `<circle class="here" cx="${t.x}" cy="${t.y}" r="19"/>` : '') + shape +
       `<text class="name" x="${t.x + 19}" y="${t.y + 6}">${t.name}</text>` +
       (here ? `<text class="tag you" x="${t.x - 16}" y="${t.y + 36}">You</text>` : '') +
-      (G.whitmore === id ? `<text class="tag rival" x="${t.x - 30}" y="${t.y - 20}">Whitmore</text>` : '') +
+      (G.whitmore === id ? `<text class="tag rival" x="${t.x - 30}" y="${t.y - 20}">${SET.rivalShort}</text>` : '') +
       (G.covered[id] ? `<text class="tag staff" x="${t.x + 19}" y="${t.y + 30}">${STAFF[G.covered[id]].short}</text>` : '');
   }).join('');
-  return `<svg class="map" viewBox="0 0 760 330" role="img" aria-label="Map of the district. Towns with something on today are filled in."><path class="river" d="${RIVER}"/>${roads}${towns}</svg>`;
+  return `<svg class="map" viewBox="0 0 760 330" role="img" aria-label="Map of the ${SET.words.area}. Towns with something on today are filled in."><path class="river" d="${RIVER}"/>${roads}${towns}</svg>`;
 }
 function renderTour(el) {
   const rows = Object.entries(G.posted).map(([t, st]) => ({ t, st, r: canReach(G, t) })).sort((a, b) => (b.r.ok - a.r.ok) || (a.r.tt - b.r.tt));
   const list = rows.map(({ t, st, r }) => {
     const where = TOWNS[t].name + (TOWNS[t].g ? `, ${GROUPS[TOWNS[t].g].name}` : '');
-    const drive = r.tt ? `${r.tt}h drive` : 'You are here';
+    const drive = r.tt ? SET.words.travel(r.tt) : 'You are here';
     const until = st.until ? `, only until ${fmtHour(st.until)}` : '';
     return `<button class="choice stop" ${r.ok ? '' : 'disabled'} onclick="travel('${t}')"><span class="where">${st.title}</span> <span class="when">in ${where}</span><span class="meta">${st.tease}. ${drive}${until}.${r.ok ? '' : ' ' + r.why + '.'}</span></button>`;
   }).join('') || '<p>Nothing else is happening today. End the day when you are ready.</p>';
@@ -143,7 +148,7 @@ function renderTour(el) {
   el.innerHTML = bar() + files() +
     (G.reaction ? `<div class="aside">${G.reaction}</div>` : '') +
     `<h2>You're in ${TOWNS[G.at].name}, with ${left} hour${left === 1 ? '' : 's'} left</h2>
-    <p class="small">Whitmore is campaigning in ${TOWNS[G.whitmore].name} today. Get to ${GROUPS[wg].name} to blunt him.${G.digToday ? ` Nina says he's in ${TOWNS[G.whitmoreNext].name} tomorrow.` : ''}${covered ? ` ${covered}.` : ''}</p>` +
+    <p class="small">${SET.rivalShort} is campaigning in ${TOWNS[G.whitmore].name} today. Get to ${GROUPS[wg].name} to blunt him.${G.digToday ? ` ${STAFF.nina.short} says he's in ${TOWNS[G.whitmoreNext].name} tomorrow.` : ''}${covered ? ` ${covered}.` : ''}</p>` +
     mapSvg() + list +
     `<p style="margin-top:18px"><button class="btn ${rows.some(x => x.r.ok) ? 'quiet' : ''}" onclick="endTour(G);go()">End the day</button></p>`;
 }
@@ -166,10 +171,10 @@ function pickDecision(i) { decide(G, i); go(); }
 function pollCard(p) {
   const prev = G.polls.filter(q => q.day < p.day).pop(), d = prev ? p.total - prev.total : 0;
   const trend = prev ? (d ? ` ${d > 0 ? 'Up' : 'Down'} ${Math.abs(d)} since day ${prev.day}.` : ` No change since day ${prev.day}.`) : '';
-  const who = p.priya ? 'Priya\'s numbers' : p.cheap ? 'Cheap poll' : 'Good poll';
+  const who = p.priya ? `${STAFF.priya.short}'s numbers` : `${p.cheap ? 'Cheap' : 'Good'} ${SET.words.poll}`;
   const rows = Object.keys(p.rows).map(id => { const v = Math.max(0, Math.min(100, p.rows[id]));
     return `<div class="prow"><span>${GROUPS[id].name}</span><div class="mid"><div class="split"><div class="you" style="width:${v}%"></div><div class="them" style="width:${100 - v}%"></div></div></div><b>${p.rows[id]}%</b></div>`; }).join('');
-  return `<div class="poll tally"><p class="phead"><b>${who}: you ${p.total}%, Whitmore ${100 - p.total}%.</b>${trend} ${p.total > 50 ? 'Ahead' : p.total === 50 ? 'Dead even' : 'Behind'}, ${p.cheap ? 'but this pollster likes to flatter you' : 'give or take a point or two'}.</p>
+  return `<div class="poll tally"><p class="phead"><b>${who}: you ${p.total}%, ${SET.rivalShort} ${100 - p.total}%.</b>${trend} ${p.total > 50 ? 'Ahead' : p.total === 50 ? 'Dead even' : 'Behind'}, ${p.cheap ? `but this ${SET.words.pollster} likes to flatter you` : 'give or take a point or two'}.</p>
     <div class="mid"><div class="split"><div class="you" style="width:${p.total}%"></div><div class="them" style="width:${100 - p.total}%"></div></div></div>
     <div class="prows">${rows}</div></div>`;
 }
@@ -177,7 +182,7 @@ function pollsTonight() {
   const today = G.polls.filter(p => p.day === G.day);
   if (today.length) return today.map(pollCard).join('');
   const last = G.polls[G.polls.length - 1];
-  return last ? `<p class="small">Your last poll, on day ${last.day}, had you at ${last.total}%. Things have moved since.</p>` : `<p class="small">You haven't polled yet. Without one, you're guessing.</p>`;
+  return last ? `<p class="small">Your last ${SET.words.poll}, on day ${last.day}, had you at ${last.total}%. Things have moved since.</p>` : `<p class="small">You haven't run a ${SET.words.poll} yet. Without one, you're guessing.</p>`;
 }
 function renderHQ(el) {
   const reports = G.info.length ? `<h3>Your team reports</h3>${wire(G.info)}` : '';
@@ -186,34 +191,34 @@ function renderHQ(el) {
     return `<div class="job"><span class="who-line">${face(id)}${STAFF[id].name} <span class="mood ${low ? 'low' : ''}">${loyalWord(G.loyal[id])}</span></span><span></span>
       <select aria-label="Job for ${STAFF[id].name}" onchange="setJob(G,'${id}',this.value)">${jobOptions(G, id).map(o => `<option value="${o.id}" ${G.jobs[id] === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>`; }).join('')}` : '';
   const ads = G.offers.map((o, i) => {
-    const crosses = o.breaks && G.principles.includes(o.breaks), where = o.market ? GROUPS[o.market].name : 'Whole district';
-    return `<button class="choice ${crosses ? 'risk' : ''}" ${G.boughtAd || o.price > G.money ? 'disabled' : ''} onclick="buyAd(G,${i});go(false)">${o.label}<span class="meta">${where}. ${o.price ? '$' + o.price + 'k' : 'Free'}.${o.tag ? ' ' + o.tag + '.' : ''}</span>${crosses ? `<span class="warn">Crosses your line: "${PRINCIPLES[o.breaks].text}"</span>` : ''}</button>`;
+    const crosses = o.breaks && G.principles.includes(o.breaks), where = o.market ? GROUPS[o.market].name : `Whole ${SET.words.area}`;
+    return `<button class="choice ${crosses ? 'risk' : ''}" ${G.boughtAd || o.price > G.money ? 'disabled' : ''} onclick="buyAd(G,${i});go(false)">${o.label}<span class="meta">${where}. ${o.price ? cash(o.price) : 'Free'}.${o.tag ? ' ' + o.tag + '.' : ''}</span>${crosses ? `<span class="warn">Crosses your line: "${PRINCIPLES[o.breaks].text}"</span>` : ''}</button>`;
   }).join('');
   const hireable = Object.entries(STAFF).map(([id, p]) => {
     const on = G.staff.includes(id);
-    return `<button class="choice" aria-pressed="${on}" onclick="${on ? 'fire' : 'hire'}(G,'${id}');go(false)"><span class="who-line">${face(id)}${p.name}</span><span class="meta">${on ? `On your team, ${loyalWord(G.loyal[id])}. Select to let them go.` : `${p.role}, $${p.pay}k a day. ${p.text}`}</span></button>`;
+    return `<button class="choice" aria-pressed="${on}" onclick="${on ? 'fire' : 'hire'}(G,'${id}');go(false)"><span class="who-line">${face(id)}${p.name}</span><span class="meta">${on ? `On your team, ${loyalWord(G.loyal[id])}. Select to let them go.` : `${p.role}, ${cash(p.pay)} a day. ${p.text}`}</span></button>`;
   }).join('');
   el.innerHTML = bar() + files() + `<h2>Evening in the war room</h2>` + reports + jobs +
     `<h3>Tonight's ad ${G.boughtAd ? '(bought)' : '(pick one)'}</h3>${ads}
     <h3>Find out where you stand</h3>
-    <div class="polls"><button class="choice" ${G.money < 10 ? 'disabled' : ''} onclick="buyPoll(G,true);go(false)">Cheap poll<span class="meta">$10k. A friendly pollster who may flatter you.</span></button>
-    <button class="choice" ${G.money < 25 ? 'disabled' : ''} onclick="buyPoll(G,false);go(false)">Good poll<span class="meta">$25k. Fairly accurate.</span></button></div>
+    <div class="polls"><button class="choice" ${G.money < 10 ? 'disabled' : ''} onclick="buyPoll(G,true);go(false)">Cheap ${SET.words.poll}<span class="meta">${cash(10)}. A friendly ${SET.words.pollster} who may flatter you.</span></button>
+    <button class="choice" ${G.money < 25 ? 'disabled' : ''} onclick="buyPoll(G,false);go(false)">Good ${SET.words.poll}<span class="meta">${cash(25)}. Fairly accurate.</span></button></div>
     ${pollsTonight()}
     <details><summary>Hire or let go</summary><div class="pick" style="margin:8px 0 14px">${hireable}</div></details>
-    <div class="cta"><button class="btn" onclick="sleep(G);go()">${G.day < DAY_COUNT ? 'Go to bed' : 'Go to bed. Tomorrow, the vote.'}</button></div>`;
+    <div class="cta"><button class="btn" onclick="sleep(G);go()">${G.day < DAY_COUNT ? 'Go to bed' : SET.night.lastBtn}</button></div>`;
 }
 
 /* ---------- Election night ---------- */
 function renderNight(el) {
   const n = G.night, shown = n.rows.slice(0, n.step + 1), row = shown[shown.length - 1], done = n.step >= n.rows.length - 1;
   const pct = 100 * row.you / (row.you + row.rival);
-  const lines = shown.map(r => { const lead = r.you >= r.rival; return `<tr><td>${r.label}</td><td class="num ${lead ? 'kept' : 'broken'}">${lead ? 'You' : 'Whitmore'} +${Math.abs(r.you - r.rival).toLocaleString()}</td></tr>`; }).join('');
-  el.innerHTML = `<section style="padding-top:24px"><h3>The last night of the campaign</h3>${wire(G.lastNews)}
-    <h1>Election night</h1>
+  const lines = shown.map(r => { const lead = r.you >= r.rival; return `<tr><td>${r.label}</td><td class="num ${lead ? 'kept' : 'broken'}">${lead ? 'You' : SET.rivalShort} +${Math.abs(r.you - r.rival).toLocaleString()}</td></tr>`; }).join('');
+  el.innerHTML = `<section style="padding-top:24px"><h3>${SET.night.before}</h3>${wire(G.lastNews)}
+    <h1>${SET.night.title}</h1>
     <div class="tally" aria-live="polite"><div class="mid"><div class="split"><div class="you" style="width:${pct}%"></div><div class="them" style="width:${100 - pct}%"></div></div></div>
-    <div class="legend"><span class="kept">You ${row.you.toLocaleString()}</span><span class="broken">Whitmore ${row.rival.toLocaleString()}</span></div></div>
-    <table><thead><tr><th>Just in</th><th class="num">Lead</th></tr></thead><tbody>${lines}</tbody></table>
-    <button class="btn" onclick="${done ? "G.phase='end';go()" : 'G.night.step++;go(false)'}">${done ? 'See the result' : 'Next batch of results'}</button></section>`;
+    <div class="legend"><span class="kept">You ${row.you.toLocaleString()}</span><span class="broken">${SET.rivalShort} ${row.rival.toLocaleString()}</span></div></div>
+    <table><thead><tr><th>${SET.night.justIn}</th><th class="num">Lead</th></tr></thead><tbody>${lines}</tbody></table>
+    <button class="btn" onclick="${done ? "G.phase='end';go()" : 'G.night.step++;go(false)'}">${done ? SET.night.done : SET.night.next}</button></section>`;
 }
 
 /* ---------- The end ---------- */
@@ -232,7 +237,7 @@ function renderEnd(el) {
     <h2>Your principles</h2><ul>${lines}</ul>
     <h2>What comes next</h2><ul>${epilogue(G).map(x => `<li>${x}</li>`).join('')}</ul>
     ${hidden.length ? `<h2>Still buried</h2><p class="small">Nobody found these, but you know about them.</p><ul>${hidden.map(k => `<li>${k.label}</li>`).join('')}</ul>` : ''}
-    <h2>The true numbers</h2><table><thead><tr><th>Group</th><th class="num">Started</th><th class="num">Finished</th><th class="num">Your last poll</th></tr></thead><tbody>${real}</tbody></table>
+    <h2>The true numbers</h2><table><thead><tr><th>Group</th><th class="num">Started</th><th class="num">Finished</th><th class="num">Your last ${SET.words.poll}</th></tr></thead><tbody>${real}</tbody></table>
     <p class="small">You started at ${G.startPct.toFixed(1)}% and needed 50%.</p>
     <h3>What helped you most</h3><ul>${best}</ul><h3>What hurt you most</h3><ul>${worst}</ul>
     <details><summary>Your route</summary><ul>${route}</ul></details>

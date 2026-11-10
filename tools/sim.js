@@ -1,9 +1,10 @@
 // Balance check: plays thousands of games with scripted player styles.
-// Usage: node tools/sim.js [games per style]   (run from the project root)
+// Usage: node tools/sim.js [games per style] [setting]   (run from the project root; setting defaults to harlan)
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const root=path.join(__dirname,'..','assets','js');
 const ctx={Math,console};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(root,'content.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'engine.js'),'utf8')+';this.E={newGame,choose,canReach,goTo,pickStop,endTour,buyAd,buyPoll,sleep,ending,realPct,PRINCIPLES,SECRETS,STAFF,STOPS,MORNING,ENCOUNTERS,TOWNS,contradiction,decide,setJob,jobOptions,advise,fire};',ctx);
+const setting=process.argv[3]||'harlan';
+vm.runInContext(fs.readFileSync(path.join(root,'content',setting+'.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'engine.js'),'utf8')+';this.E={newGame,choose,canReach,goTo,pickStop,endTour,buyAd,buyPoll,sleep,ending,realPct,PRINCIPLES,SECRETS,STAFF,STOPS,MORNING,ENCOUNTERS,TOWNS,contradiction,decide,setJob,jobOptions,advise,fire};',ctx);
 const E=ctx.E;const P=Object.keys(E.PRINCIPLES),S=Object.keys(E.SECRETS);
 const pickN=(a,n)=>a.slice().sort(()=>Math.random()-.5).slice(0,n);
 function val(c,style){const f=c.fx||{};let v=(f.all||0)*3+(f.h||0);for(const k in f.s||{})v+=f.s[k];v+=(f.money||0)/40+(f.cred||0)*.06+(f.press||0)*.03+(f.party||0)*.02;if(f.skel&&style!=='greedy')v-=f.skel.hit*f.skel.p*5;return v;}

@@ -27,6 +27,12 @@ This project is the third prototype, restyled for outside reviewers.
 - **What you say is remembered.** Positions go on the record, and contradicting them between towns is flagged and can be exposed.
 - **Fixed candidate and district** (Sam Rivera, Harlan Valley's 9th) for now. A candidate and district builder is wanted later.
 
+### Settings (2026-11-08)
+
+After reviewer 1 (India) couldn't relate to the US framing, the game got a setting picker at the top of the landing page: **Harlan Valley** (the original) and **Rajnagar** (Indian-flavoured: mill towns, city colonies, villages, a university town; MP seat; lakhs and crores; counting day by rounds). Neither names a real country. Same rules, map, groups and numbers; only text differs, so balance carries over. The landing page also now opens with a three-line briefing (who you are, the goal, the catch), since reviewer 1 didn't know what he was playing.
+
+Rajnagar was finished on 2026-11-09 after the designer approved the tone of a sample: all 75 scenes, matching Harlan's numbers exactly (checked by `tools/parity.js`; the sim gives the same win rates). Rajnagar avoids caste and religion. Scenes that leaned on religion in Harlan were rewritten around other things: Grace Fellowship's "values" became a residents' association that wants a basti cleared; the funeral became a condolence meeting.
+
 ## Balance (scripted players, 1,500–2,000 games per style)
 
 | Style | Win rate |
@@ -59,3 +65,11 @@ Worth asking reviewers (not in the game; the end-screen form was removed):
 ## Playtest log
 
 Add each reviewer's answers here with the date, their result and anything they said unprompted.
+
+### 2026-11-08 — Reviewer 1 (India)
+
+- Result: not recorded.
+- Didn't understand what the game was or what he was doing; clicked through every question without engaging.
+- Complained unprompted that there were too many questions.
+- Not from the US. The setting (Congress, incumbent, US-style districts and voter groups) assumes US political context, which may be part of why he couldn't get into it.
+- Takeaways to weigh: the opening may not explain the goal and stakes clearly enough; the number of decisions may feel like a quiz when you aren't invested; US framing may limit reach outside the US.

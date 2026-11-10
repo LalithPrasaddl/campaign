@@ -1,4 +1,6 @@
-/* The Race: game content. Plain data and text, no rules. Loaded before engine.js. */
+/* The Race, setting: Harlan Valley (small-town, county roads, dollars).
+   Plain data and text, no rules. Every setting file defines the same globals with the same ids
+   and the same numbers, so the engine and the balance don't change between settings. Loaded before engine.js. */
 const GROUPS = {
   factory:{ name:'Mill towns', size:.30, share:46, yt:60, rt:60 },
   suburbs:{ name:'Suburbs', size:.35, share:45, yt:62, rt:63 },
@@ -38,13 +40,13 @@ const SECRETS = {
   brother:{ text:"Your brother's firm won a county contract while you sat on the board", story:"A reporter has the county minutes: your brother's firm won a contract while you sat on the board." },
 };
 const STAFF = {
-  priya:{ cares:'the numbers', color:'#6B4FBB', role:'Manager', name:'Priya Nair', short:'Priya', pay:5, text:'Blunt. Replaces Dana, your optimistic volunteer, so you hear the real number.', job:['numbers','Run the real numbers (a free good poll tomorrow night)'] },
-  tess:{ cares:'what plays in the room', color:'#0E6B6B', role:'Field director', name:'Tess Okafor', short:'Tess', pay:6, text:'Your best stand-in in a town. Says what the room needs, sometimes too much of it.', job:['advance','Advance your route (your first stop tomorrow lands harder)'] },
-  ben:{ cares:'staying on schedule', color:'#7A5C2E', role:'Scheduler', name:'Ben Lowe', short:'Ben', pay:3, text:'Knows the back roads, and is always tired.', job:['route','Plan your route (drive times down by a third tomorrow)'] },
-  maya:{ cares:'what she can defend tomorrow', color:'#2F6FB0', role:'Press secretary', name:'Maya Cole', short:'Maya', pay:6, text:'Straight with reporters. Will not defend a lie for long.', job:['press','Work the press (press warms; scandals hurt less tomorrow)'] },
-  rick:{ cares:'winning, whatever it takes', color:'#B4532A', role:'Press secretary', name:'Rick Dunn', short:'Rick', pay:4, text:'Knows who to call. Will do what you did not ask.', job:['bury','Make some calls (stories less likely to surface tomorrow)'] },
-  lou:{ cares:'the money', color:'#3F7D3A', role:'Fundraiser', name:'Lou Hart', short:'Lou', pay:4, text:'Great at raising money. Their friends tend to want things.', job:['donors','Work the donors (about $16k tomorrow)'] },
-  nina:{ cares:'what someone could dig up later', color:'#8A3A6E', role:'Researcher', name:'Nina Voss', short:'Nina', pay:5, text:'Digs up what is true, and how she gets it is sometimes a question.', job:['dig','Dig on Whitmore (true attack ad tomorrow night; his next stop)'] },
+  priya:{ cares:'the numbers', color:'#6B4FBB', role:'Manager', name:'Priya Nair', short:'Priya', pay:5, text:'Blunt. Replaces Dana, your optimistic volunteer, so you hear the real number.', job:['numbers','Run the real numbers (a free good poll tomorrow night)'], done:()=>`Priya ran the real numbers. They're below, under Find out where you stand.` },
+  tess:{ cares:'what plays in the room', color:'#0E6B6B', role:'Field director', name:'Tess Okafor', short:'Tess', pay:6, text:'Your best stand-in in a town. Says what the room needs, sometimes too much of it.', job:['advance','Advance your route (your first stop tomorrow lands harder)'], done:()=>`Tess had your first stop ready before you got there.` },
+  ben:{ cares:'staying on schedule', color:'#7A5C2E', role:'Scheduler', name:'Ben Lowe', short:'Ben', pay:3, text:'Knows the back roads, and is always tired.', job:['route','Plan your route (drive times down by a third tomorrow)'], done:()=>`Ben: "Back roads saved you some time. You're welcome. I need a nap."` },
+  maya:{ cares:'what she can defend tomorrow', color:'#2F6FB0', role:'Press secretary', name:'Maya Cole', short:'Maya', pay:6, text:'Straight with reporters. Will not defend a lie for long.', job:['press','Work the press (press warms; scandals hurt less tomorrow)'], done:()=>`Maya: "Reporters are returning my calls."` },
+  rick:{ cares:'winning, whatever it takes', color:'#B4532A', role:'Press secretary', name:'Rick Dunn', short:'Rick', pay:4, text:'Knows who to call. Will do what you did not ask.', job:['bury','Make some calls (stories less likely to surface tomorrow)'], done:()=>`Rick: "Made some calls. You'd rather not know."` },
+  lou:{ cares:'the money', color:'#3F7D3A', role:'Fundraiser', name:'Lou Hart', short:'Lou', pay:4, text:'Great at raising money. Their friends tend to want things.', job:['donors','Work the donors (about $16k tomorrow)'], done:()=>`Lou brought in $16k.` },
+  nina:{ cares:'what someone could dig up later', color:'#8A3A6E', role:'Researcher', name:'Nina Voss', short:'Nina', pay:5, text:'Digs up what is true, and how she gets it is sometimes a question.', job:['dig','Dig on Whitmore (true attack ad tomorrow night; his next stop)'], done:town=>`Nina: "He's in ${town} tomorrow. And I've got enough for a true attack ad."` },
 };
 const skel=(label,p,hit)=>({label,p,hit});
 
@@ -466,4 +468,61 @@ const ADVICE={
   priya:[`The numbers say this one.`,`I've run it. This costs you the least.`],
   nina:[`This one survives a records request.`,`This is the one I couldn't dig up dirt on.`],
   ben:[`This one keeps us on schedule.`],
+};
+
+/* Everything else the screens and the engine say that belongs to this place. */
+const SET = {
+  id:'harlan', place:'Harlan Valley',
+  you:'Sam Rivera', youWas:'a former county commissioner', rival:'Dale Whitmore', rivalShort:'Whitmore', volunteer:'Dana',
+  sign:{ name:'RIVERA', for:'for Congress', line:"Harlan Valley's 9th District" },
+  brief:[
+    `You're Sam Rivera, running for Congress in Harlan Valley. Dale Whitmore has held the seat for eighteen years.`,
+    `The vote is in five days, and you're behind. Each day you choose where to drive and what to say there. On the last night, the votes are counted.`,
+    `The catch: you swear to three principles before you start, and the game keeps offering ways to win by breaking them.`,
+  ],
+  words:{ area:'district', poll:'poll', Poll:'Poll', pollster:'pollster', travel:h=>h+'h drive',
+    quietMorning:`Nothing on the phones yet. You get twenty minutes with the map and a coffee.` },
+  start:'millbrook', rivalStart:['ironton','cedar','oakfield','dunmore','pikes'],
+  money:n=>'$'+n+'k',
+  ads:{ district:`A district-wide positive TV ad`, mislead:`A misleading attack ad on Whitmore`, misleadSkel:`Fact-checkers took apart your attack ad`,
+    trueAd:`A true attack ad from Nina's research`, pac:`A super PAC offers to pay for your ads, no questions`, pacSkel:`PAC filings showed outside money behind your ads`,
+    cheap:`Channel 9 has a slow week: cheap` },
+  rickSkel:`Rick Dunn was caught leaning on a reporter to bury a story`,
+  mayaHeard:`Maya heard what you just said. She doesn't say anything.`,
+  mayaQuit:`Maya Cole has quit, on the record: "I can't say what I'm being asked to say."`,
+  quit:name=>`${name} has quit. "I'm done," the text says. That's all it says.`,
+  payroll:name=>`You can't make payroll. ${name} has left.`,
+  capitalReport:n=>`${n}, from the Capital: "The party's warmer on you than it was."`,
+  rivalQuiet:`Whitmore stays quiet today.`,
+  rivalVisit:(town,covered)=>`Whitmore campaigned in ${town}.`+(covered?` You were in the area, which blunted it.`:` You weren't around to answer him.`),
+  rivalAd:`He also put up a new attack ad.`,
+  rivalMove:`Whitmore's campaigning`,
+  drifting:g=>`${g}: "We haven't seen you in days." They are drifting away.`,
+  party:{ big:`The state party sends $70k. Marian Holt: "Don't make me regret it."`, bigLog:`The party sent $70k`,
+    cut:`The state party has moved its money to other races. Marian Holt doesn't return your call.`, cutLog:`The party cut you off`,
+    small:`The state party sends $20k and a shrug.`,
+    machine:`The party's turnout machine is working for you.`, noMachine:`The party's turnout machine is working other races.` },
+  estimate:{ manager:n=>`Priya: "We're at about ${n}%."`, volunteer:n=>`Dana, your volunteer manager: "I'd say we're at about ${n}%. We're closing."` },
+  compared:(townA,a,townB,b)=>`Channel 9 plays two clips side by side. In ${townA}: "${a}." In ${townB}: "${b}." The reporter asks which one you meant.`,
+  night:{ before:`The last night of the campaign`, title:`Election night`, justIn:`Just in`, next:`Next batch of results`, done:`See the result`, lastBtn:`Go to bed. Tomorrow, the vote.`,
+    count:[['farm',.5,'first rural precincts'],['suburbs',.4,'early suburban precincts'],['factory',.5,'the first mill-town wards'],['farm',.5,'the rest of Farm country'],['suburbs',.35,'more of the suburbs'],['factory',.5,'the remaining mill-town wards'],['college',.55,'Harlan precincts'],['suburbs',.25,'the last suburban precincts'],['college',.45,'mail ballots from Harlan']] },
+  endings:{
+    clean:{ title:`You won, and you kept your word`, text:`It is rare, and it may not happen twice. Nobody can tell you what you owe, because you do not owe anything.` },
+    bought:{ title:`You won. Was it you who won?`, text:`You are the member-elect for the 9th District. The person who swore those three things on day 1 is not quite the person giving this speech.` },
+    honour:{ title:`You lost, and you kept your word`, text:`You can look at yourself in the morning. Whitmore gets the seat, and the mill towns get two more years of nothing. Was it worth it? You will wonder.` },
+    worst:{ title:`You sold out, and you lost anyway`, text:`You crossed your own lines and it still was not enough. There is nothing to show for it except the list below.` },
+  },
+  epilogue:{
+    gulfline:`Week one: Gulfline's lobbyist is in your calendar for a "getting to know you" coffee.`,
+    mabry:`Earl Mabry's nephew starts in your office on Monday. He does not appear to have read the job description.`,
+    widow:`A woman from the diner has called your office four times about her mother's bills.`,
+    holt:`Marian Holt calls about your first big vote. She doesn't ask how you feel about the bill.`,
+    quarry:`The quarry owner's permit is on your desk with a sticky note from Lou.`,
+    lena:`Lena Ortiz's first memo as your adviser is about how you should run your office.`,
+    local88:`Millbrook wants to automate its second line. Local 88 sends you a photo of your signature.`,
+    slate:`The sheriff you endorsed is on the phone about "a little trouble".`,
+    binder:`Your office has a binder of everything you told each town. Your chief of staff reads it and goes quiet.`,
+    quiet:`Your first week is quiet. You owe nobody. You also have almost no allies in the capital.`,
+    lost:`Whitmore wins a tenth term. He sends a gracious note.`,
+  },
 };

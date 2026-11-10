@@ -85,6 +85,17 @@ button:disabled { cursor: default; opacity: .45; }
 .sign .line { font: 600 15px/1.3 var(--display); }
 .landing h1 { margin-top: 64px; }
 .lede { font-family: var(--prose); font-size: 20px; line-height: 1.55; margin: 14px 0 22px; }
+.brief { font-family: var(--prose); font-size: 19px; line-height: 1.55; margin: 14px 0 22px; }
+.brief p:last-child { padding-left: 12px; border-left: 4px solid var(--road); }
+.places { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 36px; }
+.places .small { grid-column: 1 / -1; margin: 0; font-weight: 700; }
+.place-pick {
+  text-align: left; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); font-size: 14px; line-height: 1.35; color: var(--ink-soft);
+}
+.place-pick b { display: block; font-size: 17px; color: var(--ink); margin-bottom: 2px; }
+.place-pick[aria-pressed="true"] { border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); background: var(--teal-soft); }
+.place-pick:hover { border-color: var(--teal); }
 .steps { padding-left: 22px; margin: 0 0 26px; font-size: 17px; }
 .steps li { margin-bottom: 8px; }
 .note { border-top: 1px solid var(--line); margin-top: 32px; padding-top: 16px; }
